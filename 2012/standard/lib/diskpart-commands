@@ -1,0 +1,11 @@
+rescan
+select disk 1
+attributes disk clear readonly
+select disk 1
+online disk
+select disk 1
+create partition primary
+format fs=ntfs quick
+select volume 3
+assign letter=G
+exit

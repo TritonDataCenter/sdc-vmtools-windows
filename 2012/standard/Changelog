@@ -1,0 +1,13 @@
+me-ws2012std-20140919
+* Added lib/run-userdata.ps1 lib/run-userscript.ps1
+* Added JoyentTask into task scheduler which runs lib/run-userdata.ps1 and
+  lib/run-userscript.ps1 on boot
+* Added bin/setup.bat which does most of the work now instead of SetupComplete.
+  It activates Windows, sets password, partitions secondary disk, installs
+  JoyentTask into task scheduler, and cleans up in the end.
+* Added images directory with Joyent icons and Joyent wallpaper
+* Added tmp directory which run-userdata.ps1 dumps into file tmp/mdata-get-userdata
+* Updated disk driver and network driver to newer versions in 'drivers' directory
+* Improved bin/install.bat to install Joyent icons and install contents
+* Removed lib/diskpart directory and added lib/diskpart-commands file instead
+* Removed un-needed files in various directories (sysprep, drivers)
