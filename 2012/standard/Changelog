@@ -1,9 +1,9 @@
-me-ws2012std-20160802
+ws2012std-20160802
 * Updated drivers directory
 * Updated bin/setup.bat to include time configuration on boot
 * Updated Windows 2012 Server Standard to more recent ISO (less updates)
 
-me-ws2012std-20140919
+ws2012std-20140919
 * Added lib/run-userdata.ps1 lib/run-userscript.ps1
 * Added JoyentTask into task scheduler which runs lib/run-userdata.ps1 and
   lib/run-userscript.ps1 on boot
