@@ -43,7 +43,7 @@ Copy your windows.iso, and drivers.iso (Latest virtio drivers) to the filesystem
 # cp windows2012.iso drivers.iso /zones/UUID/root
 # vmadm boot UUID order=cd,once=d cdrom=/windows2012.iso,ide cdrom=/drivers.iso,ide
 ```
-Get the VNC information using ``vmadm info UUID vnc``` then use your VNC tool (Chicken of the VNC) to connect to the VM.
+Get the VNC information using ```vmadm info UUID vnc``` then use your VNC tool (Chicken of the VNC) to connect to the VM.
 
 Go through the installer.  When it comes to the load drivers screen browse to the drivers.iso cdrom and load the network and disk driver.  It will then find a 40G drive to install on.
 
