@@ -70,7 +70,7 @@ After the VM is completely shut down, snapshot it, send it to a file and gzip it
 # zfs send UUID-disk0@final > ws2012-1.0.0.zfs && gzip ws2012-1.0.0.zfs
 ```
 
-Create your manifest for the image.  It should look like this below replacing with your own created UUID, insert the file size of the image file above, and the sha1 of the image file above using ```digest -a sha1 ws2012-1.0.0.zfs.gz```
+Create your manifest for the image.  It should look like this below replacing with your own created ```uuid```, insert the file ```size``` of the image file above, and the ```sha1``` of the image file above using ```digest -a sha1 ws2012-1.0.0.zfs.gz```
 
 ```
 {
