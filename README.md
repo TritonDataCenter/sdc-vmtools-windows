@@ -51,7 +51,7 @@ When it boots for the first time it will ask you to change the Administrator pas
 
 ## Customize your Windows VM and run Sysprep
 
-At this point Windows is installed, booted, and you are ready to customize your Windows VM.  Copy the sdc-vmtools-windows repository contents to your VM.  You'll likely need to create an ISO of this repository and then boot with it attached like we did above so it will be mounted in.
+At this point Windows is installed, booted, and you are ready to customize your Windows VM.  Copy the sdc-vmtools-windows repository contents to your VM.  You'll likely need to create an ISO of this repository and then boot with it attached (```cdrom=/windowstools.iso,ide```) like we did above so it will be mounted in.
 
 Once it's in your filesystem run the install.bat file.  This will install everything to C:\smartdc, install SetupComplete.cmd, and run the run-configuration.ps1.  The run-configuration.ps1 script sets up WinRM, enables remote desktop, enables ICMP, and installs NFS client for you so you don't have to go in and configure it manually.  It's always worth it to double check after that everything configured properly.  If RDP and ICMP aren't enabled properly now then you won't be able to get into the image once it's all up and running.
 
