@@ -1,5 +1,5 @@
 Find this ISO at https://download.joyent.com/pub/vmtools/winsetup*
-Or on OSX:
+Or on OSX make your own:
 # hdiutil makehybrid -o winsetup.iso winsetup/ -iso -joliet
 
 This ISO currently sets up a full Windows install with v0.1.141 virtio drivers
