@@ -1,4 +1,4 @@
-Dev example autoinstall CD. Mix'n'match to your heart's delight!
+Find this ISO at https://download.joyent.com/pub/vmtools/winsetup*
 
 This ISO currently sets up a full Windows install with v0.1.141 virtio drivers
 for disk and networking, SAC console, ICMP ping, and RDP enabled.
