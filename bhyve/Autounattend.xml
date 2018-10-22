@@ -139,6 +139,10 @@
                     <Order>6</Order>
                     <Path>SchTasks /create /f /ru SYSTEM /sc ONSTART /tn "Setup Networking" /tr "powershell.exe -file c:\smartdc\bin\enable_networking.ps1"</Path>
                 </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>7</Order>
+                    <Path>SchTasks /create /f /ru SYSTEM /sc ONSTART /tn "Check if preparing disk image" /tr "powershell.exe -file c:\smartdc\bin\prepare_image_runner.ps1"</Path>
+                </RunSynchronousCommand>
             </RunSynchronous>
         </component>
     </settings>
