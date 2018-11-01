@@ -58,6 +58,10 @@ call :heredoc joyenttask > C:\smartdc\tmp\JoyentTask.xml && goto next3
       <Command>powershell.exe</Command>
       <Arguments>-executionpolicy bypass -file C:\smartdc\lib\run-userscript.ps1</Arguments>
     </Exec>
+    <Exec>
+      <Command>powershell.exe</Command>
+      <Arguments>-executionpolicy bypass bcdedit /ems {default} on; bcdedit /emssettings emsport:1 emsbaudrate:115200</Arguments>
+    </Exec>
   </Actions>
 </Task>
 :next3
@@ -65,6 +69,7 @@ for /f "delims=" %%a in ('C:\smartdc\bin\mdata-get.exe administrator_pw') do @se
 schtasks /Create /TN "JoyentTask" /XML "C:\smartdc\tmp\JoyentTask.xml" /RU "%COMPUTERNAME%\Administrator" /RP "%password%"
 powershell.exe -executionpolicy bypass -file C:\smartdc\lib\run-userdata.ps1
 powershell.exe -executionpolicy bypass -file C:\smartdc\lib\run-userscript.ps1
+powershell.exe -executionpolicy bypass bcdedit /ems {default} on; bcdedit /emssettings emsport:1 emsbaudrate:115200
 powershell.exe -executionpolicy bypass net start w32time; w32tm /config /manualpeerlist:time.nist.gov; w32tm /resync /nowait
 del C:\smartdc\bin\setup.bat
 
