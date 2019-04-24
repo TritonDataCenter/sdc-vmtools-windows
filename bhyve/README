@@ -1,4 +1,4 @@
-Find this ISO at https://download.joyent.com/pub/vmtools/winsetup*
+Find this ISO at https://download.joyent.com/pub/vmtools/, named winsetup-*
 Or on OSX make your own:
 # git clone https://github.com/joyent/sdc-vmtools-windows
 # hdiutil makehybrid -o winsetup.iso sdc-vmtools-windows/bhyve/ -iso -joliet
@@ -9,14 +9,14 @@ for disk and networking, SAC console, ICMP ping, and RDP enabled.
 On a SmartOS machine with the newest platform given to you by Joyent,
 first set some variables for the bhyve VM used for Windows installation:
 
-export WINDOWS_INSTALL_CD=/zones/win2016eval.iso
+export WINDOWS_INSTALL_CD=/zones/win2019eval.iso
 export WINDOWS_DRIVER_CD=/zones/winsetup.iso
 
 zfs create -V 15G zones/windows
 next:
 zfs create -V 80G zones/windows
 
-For Windows 2016:
+For Windows 2016/2019:
 
 pfexec /usr/sbin/bhyve -c 2 -m 3G -H \
     -l com1,stdio \
@@ -47,7 +47,7 @@ install log rather than a blank screen, hit 'p' to disable paging and hit
 
 When bhyve terminates, run it again, but without the WINDOWS_INSTALL_CD line:
 
-For Windows 2016:
+For Windows 2016/2019:
 
 pfexec /usr/sbin/bhyve -c 2 -m 3G -H \
     -l com1,stdio \
