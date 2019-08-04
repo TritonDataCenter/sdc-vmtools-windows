@@ -1,5 +1,6 @@
 Find this ISO at https://download.joyent.com/pub/vmtools/, named winsetup-*
 Or on OSX make your own:
+# EDIT: removed <ProductKey> XML tag from Autounattend.xml to make eval ISOs work (License Terms not found error)
 # git clone https://github.com/joyent/sdc-vmtools-windows
 # hdiutil makehybrid -o winsetup.iso sdc-vmtools-windows/bhyve/ -iso -joliet
 
@@ -12,7 +13,6 @@ first set some variables for the bhyve VM used for Windows installation:
 export WINDOWS_INSTALL_CD=/zones/win2019eval.iso
 export WINDOWS_DRIVER_CD=/zones/winsetup.iso
 
-zfs create -V 15G zones/windows
 next:
 zfs create -V 80G zones/windows
 
@@ -138,3 +138,7 @@ vmadm start <new VM's UUID>
 
 RDP should become available once Windows boots up. Alternatively, use VNC,
 or 'vmadm console' to access Windows' SAC.
+
+RDP available via external NIC. If put only on admin NIC, use VNC with socat like this:
+
+socat TCP-LISTEN:5500 EXEC:'ssh cn06 "socat STDIO UNIX-CONNECT:/zones/cb733c87-5b5f-e0d5-feef-ff42c6519117/root/tmp/vm.vnc"'
