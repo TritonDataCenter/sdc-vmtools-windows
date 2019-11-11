@@ -1,9 +1,12 @@
-# sdc-vmtools-windows
+# Windows KVM image creation
+
+For Windows Server 2019 KVM, see [README](./2019/README.md).
 
 ## Create your Windows VM and install Windows
 
 Create your vmspec.json which is the configuration for your Windows VM:
-```
+
+```json
 {
   "brand": "kvm",
   "alias": "wsserver1",
@@ -35,15 +38,16 @@ Create your vmspec.json which is the configuration for your Windows VM:
 }
 ```
 
-Run ```vmadm create -f vmspec.json``` which will create the VM and tell you the UUID.
+Run `vmadm create -f vmspec.json` which will create the VM and tell you the UUID.
 
 Copy your windows.iso, and drivers.iso (Latest virtio drivers) to the filesystem of the VM you just created, and tell it to boot from that:
 
+```bash
+cp windows2012.iso drivers.iso /zones/UUID/root
+vmadm boot UUID order=cd,once=d cdrom=/windows2012.iso,ide cdrom=/drivers.iso,ide
 ```
-# cp windows2012.iso drivers.iso /zones/UUID/root
-# vmadm boot UUID order=cd,once=d cdrom=/windows2012.iso,ide cdrom=/drivers.iso,ide
-```
-Get the VNC information using ```vmadm info UUID vnc``` then use your VNC tool (Chicken of the VNC) to connect to the VM.
+
+Get the VNC information using `vmadm info UUID vnc` then use your VNC tool (Chicken of the VNC) to connect to the VM.
 
 Go through the installer.  When it comes to the load drivers screen browse to the drivers.iso cdrom and load the network and disk driver.  It will then find a 40G drive to install on.
 
@@ -51,28 +55,28 @@ When it boots for the first time it will ask you to change the Administrator pas
 
 ## Customize your Windows VM and run Sysprep
 
-At this point Windows is installed, booted, and you are ready to customize your Windows VM.  Copy the sdc-vmtools-windows repository contents to your VM.  You'll likely need to create an ISO of this repository and then boot with it attached (```cdrom=/windowstools.iso,ide```) like we did above so it will be mounted in.
+At this point Windows is installed, booted, and you are ready to customize your Windows VM.  Copy the sdc-vmtools-windows repository contents to your VM.  You'll likely need to create an ISO of this repository and then boot with it attached (`cdrom=/windowstools.iso,ide`) like we did above so it will be mounted in.
 
 Once it's in your filesystem run the install.bat file.  This will install everything to C:\smartdc, install SetupComplete.cmd, and run the run-configuration.ps1.  The run-configuration.ps1 script sets up WinRM, enables remote desktop, enables ICMP, and installs NFS client for you so you don't have to go in and configure it manually.  It's always worth it to double check after that everything configured properly.  If RDP and ICMP aren't enabled properly now then you won't be able to get into the image once it's all up and running.
 
-Edit C:\smartdc\bin\setup.bat and insert your MS key in place of ```XXXXX-XXXXX-XXXXX-XXXXX-XXXXX```
+Edit C:\smartdc\bin\setup.bat and insert your MS key in place of `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX`
 
 Make any other customizations you want for your image.
 
-Run ```C:\smartdc\sysprep\sysprep.bat``` which will sysprep the image and shut down the VM.
+Run `C:\smartdc\sysprep\sysprep.bat` which will sysprep the image and shut down the VM.
 
 ## Create the image file and image json manifest
 
 After the VM is completely shut down, snapshot it, send it to a file and gzip it:
 
-```
-# zfs snapshot UUID-disk0@final
-# zfs send UUID-disk0@final > ws2012-1.0.0.zfs && gzip ws2012-1.0.0.zfs
+```bash
+zfs snapshot UUID-disk0@final
+zfs send UUID-disk0@final > ws2012-1.0.0.zfs && gzip ws2012-1.0.0.zfs
 ```
 
-Create your manifest for the image.  It should look like this below replacing with your own created ```uuid```, insert the file ```size``` of the image file above, and the ```sha1``` of the image file above using ```digest -a sha1 ws2012-1.0.0.zfs.gz```
+Create your manifest for the image.  It should look like this below replacing with your own created `uuid`, insert the file `size` of the image file above, and the `sha1` of the image file above using `digest -a sha1 ws2012-1.0.0.zfs.gz`
 
-```
+```json
 {
   "v": "2",
   "name": "ws2012",
@@ -122,4 +126,4 @@ Create your manifest for the image.  It should look like this below replacing wi
 }
 ```
 
-You can then import the image using ```sdc-imgadm import -f ws2012-1.0.0.zfs.gz -m ws2012-1.0.0.json```
+You can then import the image using `sdc-imgadm import -f ws2012-1.0.0.zfs.gz -m ws2012-1.0.0.json`
