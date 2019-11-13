@@ -127,7 +127,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     ```bash
     zfs destroy zones/$VM_ID-disk0@sysprep; \
     zfs snapshot zones/$VM_ID-disk0@sysprep && \
-    zfs send zones/$VM_ID-disk0@sysprep | gzip -c > windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz && \
+    zfs send zones/$VM_ID-disk0@sysprep | gzip -c > /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz && \
     zfs destroy zones/$VM_ID-disk0@sysprep; \
     zfs rollback zones/$VM_ID-disk0@presysprep && \
     zfs destroy zones/$VM_ID-disk0@presysprep
@@ -178,7 +178,12 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     " > /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}.manifest
     ```
 
-15. Import newly created image into local headnode `sdc-imgadm import --skip-owner-check -m /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}.manifest -f /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz`
+15. Import newly created image into local headnode
+
+    ```bash
+    sdc-imgadm import --skip-owner-check -m /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}.manifest -f /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz
+    ```
+
 16. Destroy safety net snapshot, `zfs destroy zones/${VM_ID}-disk0@pre${V}`
 
 ## Resource notes
@@ -188,7 +193,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 * <https://docs.joyent.com/private-cloud/images/kvm>
 * <https://docs.joyent.com/private-cloud/images/kvm/windows>
 
-Looks like the following links were replaced by [Joyent doc](https://docs.joyent.com/private-cloud/images) which is missing Windows KVM information, but [SmartOs wiki](https://wiki.smartos.org/display/DOC/How+to+create+a+Virtual+Machine+in+SmartOS) filled most of the gaps for me.
+Looks like the following links were replaced by [Joyent doc](https://docs.joyent.com/private-cloud/images) which is missing Windows KVM information, but [SmartOS wiki](https://wiki.smartos.org/display/DOC/How+to+create+a+Virtual+Machine+in+SmartOS) filled most of the gaps for me.
 
 * <https://docs.joyent.com/sdc7/working-with-images/how-to-create-a-kvm-image>
 * <https://docs.joyent.com/sdc7/working-with-images/how-to-create-a-kvm-image/how-to-create-a-windows-image>
