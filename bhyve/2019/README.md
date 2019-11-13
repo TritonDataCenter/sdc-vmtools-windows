@@ -152,7 +152,7 @@ Configure prototype VM as desired, then proceed to [Updating the image](#updatin
     ```
 
 4. Take a pre-patch snapshot for a safety net, `vmadm stop $VM_ID; zfs snapshot zones/${VM_ID}/disk0@pre${V}`
-    * Rollback to this point if any problems occur `vmadm stop -F $VM_ID && zfs rollback zones/${VM_ID}/disk0@pre${V} && vmadm start $VM_ID`
+    * Rollback to this point if any problems occur, `vmadm stop -F $VM_ID && zfs rollback zones/${VM_ID}/disk0@pre${V} && vmadm start $VM_ID`
 5. Start the template VM, `vmadm start $VM_ID`
 6. RDP to `VM_IP` as `\administrator` with the credentials you specified during setup
 7. Perform neccessary image customization
@@ -172,9 +172,19 @@ Configure prototype VM as desired, then proceed to [Updating the image](#updatin
     vmadm start $VM_ID
     ```
 
-11. Once the VM starts back up, RDP back in and execute `c:\windows\system32\sysprep\sysprep /generalize /oobe /shutdown /unattend:c:\smartdc\lib\unattend.xml`
-12. Sysprep will stop the VM, once the VM is stopped, continue to the next step. `vmadm list uuid=$VM_ID -Ho state`
-13. Export sysprep version, and rollback to pre-sysprep snapshot, ~30 minutes `zfs destroy zones/$VM_ID/disk0@sysprep; zfs snapshot zones/$VM_ID/disk0@sysprep && zfs send zones/$VM_ID/disk0@sysprep | gzip -c > /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz && zfs destroy zones/$VM_ID/disk0@sysprep; zfs rollback zones/$VM_ID/disk0@presysprep && zfs destroy zones/$VM_ID/disk0@presysprep`
+11. Once the VM starts back up, RDP back in and execute, `C:\Windows\System32\sysprep\sysprep /generalize /oobe /shutdown /unattend:c:\smartdc\lib\unattend.xml`
+12. Sysprep will stop the VM, once the VM is stopped, continue to the next step, `vmadm list uuid=$VM_ID -Ho state`
+13. Export sysprep version, and rollback to pre-sysprep snapshot, ~30 minutes
+
+    ```bash
+    zfs destroy zones/$VM_ID/disk0@sysprep; \
+    zfs snapshot zones/$VM_ID/disk0@sysprep && \
+    zfs send zones/$VM_ID/disk0@sysprep | gzip -c > /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz && \
+    zfs destroy zones/$VM_ID/disk0@sysprep && \
+    zfs rollback zones/$VM_ID/disk0@presysprep && \
+    zfs destroy zones/$VM_ID/disk0@presysprep
+    ```
+
 14. Create image manifest
 
     ```bash
@@ -182,9 +192,9 @@ Configure prototype VM as desired, then proceed to [Updating the image](#updatin
       \"v\": \"2\",
       \"uuid\": \"$IMAGE_UUID\",
       \"owner\": \"$ADMIN_UUID\",
-      \"name\": \"Windows Server ${OS_VERSION}\",
-      \"description\": \"Windows Server ${OS_VERSION}, built $(date +"%Y-%m-%d")\",
-      \"version\": \"$V\",
+      \"name\": \"Windows Server ${OS_VERSION} - ${HYPERVISOR}\",
+      \"description\": \"Windows Server ${OS_VERSION} - ${HYPERVISOR}, built $(date +"%Y-%m-%d")\",
+      \"version\": \"${V}\",
       \"state\": \"active\",
       \"disabled\": false,
       \"public\": true,
@@ -192,8 +202,8 @@ Configure prototype VM as desired, then proceed to [Updating the image](#updatin
       \"type\": \"zvol\",
       \"files\": [
         {
-          \"sha1\": \"$(sum -x sha1 /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz | cut -d' ' -f1)\",
-          \"size\": $(ls -l /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz | awk '{ print $5 }'),
+          \"sha1\": \"$(sum -x sha1 /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz | cut -d' ' -f1)\",
+          \"size\": $(ls -l /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz | awk '{ print $5 }'),
           \"compression\": \"gzip\"
         }
       ],
@@ -213,45 +223,22 @@ Configure prototype VM as desired, then proceed to [Updating the image](#updatin
           \"name\": \"administrator\"
         }
       ],
-      \"image_size\": $(zfs get -H -o value -p volsize zones/$VM_ID/disk0 | awk '{print $1/1024/1024}'),
+      \"image_size\": $(zfs get -H -o value -p volsize zones/${VM_ID}/disk0 | awk '{print $1/1024/1024}'),
       \"disk_driver\": \"virtio\",
       \"nic_driver\": \"virtio\",
       \"cpu_type\": \"host\"
     }
-    " > /var/tmp/images/ws${OS_VERSION}_vm.manifest
+    " > /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}.manifest
     ```
 
-15. Import newly created image into bli-sdc02 `sdc-imgadm import --skip-owner-check -m /var/tmp/images/ws${OS_VERSION}_vm.manifest -f /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz`
-16. Copy SSH key to headnodes for easier transfers
+15. Import newly created image into local headnode
 
     ```bash
-    for headnode in 10.91.254.4 10.80.254.2
-    do
-      ssh -i /root/.ssh/sdc.id_rsa $headnode "grep -qv '$SSH_PUB' /root/.ssh/authorized_keys && echo '$SSH_PUB' >> /root/.ssh/authorized_keys"
-    done
+    sdc-imgadm import --skip-owner-check -m /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}.manifest -f /var/tmp/images/windows-server-${OS_VERSION}-${HYPERVISOR}-${V}-sysprep.zvol.gz
     ```
 
-17. Copy neccessary files to other headnodes, and import image:
-
-    ```bash
-    for headnode in 10.91.254.4 10.80.254.2
-    do
-      echo "Copying ws${OS_VERSION}-$V-sysprep.zvol.gz to $headnode" &&
-      scp -i /root/.ssh/sdc.id_rsa /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz $headnode:/var/tmp/images/ &&
-      echo "Copying ws${OS_VERSION}_vm.manifest to $headnode" &&
-      scp -i /root/.ssh/sdc.id_rsa /var/tmp/images/ws${OS_VERSION}_vm.manifest $headnode:/var/tmp/images/ &&
-      echo "Importing image" &&
-      ssh -i /root/.ssh/sdc.id_rsa $headnode "/opt/smartdc/bin/sdc-imgadm import --skip-owner-check -m /var/tmp/images/ws${OS_VERSION}_vm.manifest -f /var/tmp/images/ws${OS_VERSION}-$V-sysprep.zvol.gz" &&
-      echo "Removing old images on $headnode" &&
-      ssh -i /root/.ssh/sdc.id_rsa $headnode "find /var/tmp/images -iname 'ws${OS_VERSION}-*.zvol.gz' -mtime +14 -exec rm {} \\;" &&
-      echo -e "\n\n"
-    done
-    ```
-
-18. Copy image files to backup server `USER=first.last; rsync -P /var/tmp/images/ws${OS_VERSION}-$V*.zvol* $USER@ops-sea-bkup01.faithlife.io:/mnt/data01/Operations/images/Windows/; ssh $USER@ops-sea-bkup01.faithlife.io "sudo chown -R ftp_user:ftp_users /mnt/data01/Operations/images && sudo chmod -R 777 /mnt/data01/Operations/images"`
-19. Destroy safety net snapshot, `zfs destroy zones/${VM_ID}/disk0@pre$V`
+16. Destroy safety net snapshot, `zfs destroy zones/${VM_ID}/disk0@pre${V}`
 
 ## Resource notes
 
-* <https://github.com/joyent/sdc-vmtools-windows>
 * <https://gist.github.com/mgerdts/6fabc913aca3acd2f1e435a7dc2bbd80>
