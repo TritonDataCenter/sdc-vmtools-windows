@@ -7,7 +7,7 @@
 
 ## Creating a fresh bhyve image
 
-Joyent sdc-vmtools-windows documentation for Windows Server 2012R2 and 2016 involve hard-coding configuration values, which has longevity limitations. As such, this process relies on operator judgement, allows infrastructure agnostic configuration, and decouples image creation from winsetup ISO publishes.
+Windows Server 2012R2 and 2016 involved hard-coding configuration values, this process relies on operator judgement, allows infrastructure agnostic configuration, and decouples image creation from winsetup ISO publishes.
 
 To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
@@ -18,117 +18,132 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 4. Set helper variables
 
     ```bash
-    export WINDOWS_INSTALL_CD=/zones/win2019.iso
-    export VIRTIO_DRIVER_CD=/zones/virtio-win.iso
-    export INSTALL_ZVOL=windows_2019
+    TEMPLATE_VM_ALIAS='ops-dev-base05' && \
+    WINDOWS_INSTALL_CD=/zones/win2019.iso && \
+    VIRTIO_DRIVER_CD=/zones/virtio-win.iso && \
+    INSTALL_ZVOL=windows_bhyve_2019
     ```
 
 5. Copy Windows ISO to headnode, `scp ~/Downloads/SW_DVD9_Win_Server_STD_CORE_2019_64Bit_English_DC_STD_MLF_X21-96581.iso root@10.70.1.2:/var/tmp/images/win2019.iso`
-6. Download VirtIO drivers, `wget --no-check-certificate -O $VIRTIO_DRIVER_CD https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso`
+6. Move Windows install ISO to a bhyve-accessible location, `mv /var/tmp/images/win2019.iso $WINDOWS_INSTALL_CD`
+7. Download VirtIO drivers, `wget --no-check-certificate -O $VIRTIO_DRIVER_CD https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso`
     * As of this writing, `171` is the most recent stable
-7. Move Windows install ISO to accessible location, `mv /var/tmp/win2019.iso $WINDOWS_INSTALL_CD`
-8. Create installation volume, `zfs create -V 60G zones/$INSTALL_ZVOL`
+8. Create installation volume, `zfs create -o volblocksize=4k -V 60G zones/$INSTALL_ZVOL`
+9. Launch bhyve with installation media
 
-Launch bhyve with installation media
+    ```bash
+    pfexec /usr/sbin/bhyve -c 4 -m 8G -H \
+        -l com1,stdio \
+        -l bootrom,/usr/share/bhyve/uefi-rom.bin \
+        -s 2,ahci-cd,$WINDOWS_INSTALL_CD \
+        -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
+        -s 4,ahci-cd,$VIRTIO_DRIVER_CD \
+        -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768,wait \
+        -s 29,xhci,tablet \
+        -s 31,lpc \
+        $INSTALL_ZVOL
+    ```
 
-```bash
-pfexec /usr/sbin/bhyve -c 4 -m 8G -H \
-    -l com1,stdio \
-    -l bootrom,/usr/share/bhyve/uefi-rom.bin \
-    -s 2,ahci-cd,$WINDOWS_INSTALL_CD \
-    -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
-    -s 4,ahci-cd,$VIRTIO_DRIVER_CD \
-    -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768,wait \
-    -s 29,xhci,tablet \
-    -s 31,lpc \
-    $INSTALL_ZVOL
-```
+10. Connect via TightVNC to port `15902`, hit any key to boot Windows installation media
+    * POST will wait for VNC connection
+11. Go through the Windows installation process
+    * TightVNC client is known to work
+    * Choose **Custom** installation
+    * Load VirtIO **NetKVM** then **viostor** drivers from the VirtIO ISO during setup
+    * Once the installation is done, the bhyve process will terminate
+12. Boot VM again to finalize Windows installation, no user input required for this
 
-Connect via TightVNC (POST will wait for VNC connection), then hit any key for Windows installation. During Windows installation, load NetKVM driver first, then load viostor. Once the installation is done, the bhyve process will terminate.
+    ```bash
+    pfexec /usr/sbin/bhyve -c 4 -m 8G -H \
+        -l com1,stdio \
+        -l bootrom,/usr/share/bhyve/uefi-rom.bin \
+        -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
+        -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768 \
+        -s 29,xhci,tablet \
+        -s 31,lpc \
+        $INSTALL_ZVOL
+    ```
 
-Finalize installation with a boot, no user input required for this.
+13. Re-run the above command, re-connect via VNC, finalize setup, then shutdown
+    * Set administrator password
+14. Save a zvol for ease of use, `zfs send zones/$INSTALL_ZVOL > /var/tmp/images/${INSTALL_ZVOL}_base.zvol`
+15. Clean up initial installation files
+    1. `rm $WINDOWS_INSTALL_CD $VIRTIO_DRIVER_CD`
+    2. `zfs destroy zones/$INSTALL_ZVOL`
+16. Build template VM json, ensure values match your environment
 
-```bash
-pfexec /usr/sbin/bhyve -c 4 -m 8G -H \
-    -l com1,stdio \
-    -l bootrom,/usr/share/bhyve/uefi-rom.bin \
-    -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
-    -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768 \
-    -s 29,xhci,tablet \
-    -s 31,lpc \
-    $INSTALL_ZVOL
-```
-
-Re-run the above command, connect via VNC, set the [server administrator password](https://passwordmanager.lrscorp.net/SecretView.aspx?secretid=10). sign-in, then shutdown the VM.
-
-Save a zvol for ease of use, `zfs send zones/$INSTALL_ZVOL > /zones/${INSTALL_ZVOL}_base.zvol`
-
-Create a VM manifest:
-
-```bash
-echo '{
-  "alias": "ops-dev-base03",
-  "brand": "bhyve",
-  "vcpus": 4,
-  "autoboot": false,
-  "ram": 8192,
-  "bootrom": "uefi",
-  "disks": [
-    {
-      "boot": true,
-      "model": "virtio",
-      "size": 61440
+    ```bash
+    echo '{
+      "alias": "ops-dev-base05",
+      "brand": "bhyve",
+      "vcpus": 2,
+      "autoboot": false,
+      "ram": 8192,
+      "bootrom": "uefi",
+      "disks": [
+        {
+          "boot": true,
+          "model": "virtio",
+          "size": 61440
+        }
+      ],
+      "nics": [
+        {
+          "nic_tag": "external",
+          "vlan_id": 201,
+          "ip": "10.70.1.223",
+          "netmask": "255.255.255.0",
+          "gateway": "10.70.1.1",
+          "primary": "true",
+          "model": "virtio"
+        }
+      ],
+      "resolvers": [
+        "10.70.7.2",
+        "10.70.7.3"
+      ]
     }
-  ],
-  "nics": [
-    {
-      "nic_tag": "external",
-      "vlan_id": 201,
-      "ip": "10.70.1.221",
-      "netmask": "255.255.255.0",
-      "gateway": "10.70.1.1",
-      "primary": "true",
-      "model": "virtio"
-    }
-  ],
-  "resolvers": [
-    "10.70.7.2",
-    "10.70.7.3"
-  ]
-}
-' > /zones/${INSTALL_ZVOL}_manifest.json
-```
+    ' > /var/tmp/images/${INSTALL_ZVOL}_manifest.json
+    ```
 
-Create a VM, and try to make vminfod less crashy: `vmadm create -f /zones/${INSTALL_ZVOL}_manifest.json && svcadm restart vminfod`
+17. Create template VM, `vmadm create -f /var/tmp/images/${INSTALL_ZVOL}_manifest.json && svcadm restart vminfod`
+    * Depending on Platform Image, `vminfod` may need restarted to pick up bhyve changes
+18. Copy base Windows install into fresh VM
 
-Copy base Windows install into fresh VM:
+    ```bash
+    VM_ID=$(vmadm lookup -1 alias=${TEMPLATE_VM_ALIAS})
+    zfs destroy zones/${VM_ID}/disk0 && \
+    zfs send zones/$INSTALL_ZVOL | zfs recv zones/${VM_ID}/disk0 && \
+    vmadm start $VM_ID
+    ```
 
-```bash
-zfs destroy zones/$(vmadm lookup -1 alias=ops-dev-base03)/disk0 && \
-zfs send zones/$INSTALL_ZVOL | zfs recv zones/$(vmadm lookup -1 alias=ops-dev-base03)/disk0 && \
-vmadm start $(vmadm lookup -1 alias=ops-dev-base03)
-```
+19. Create VNC socket manually, `socat -d -d TCP4-LISTEN:15902,fork UNIX-CONNECT:/zones/${VM_ID}/root/tmp/vm.vnc`
+    * [bhyve VNC and vminfod can be inconsistent](https://smartos.org/bugview/OS-7953)
+20. Connect via TightVNC and sign-in to VM
+21. Manually configure initial networking, ensure values match your environment
+    * Unlike KVM, bhyve does not listen to local traffic for DHCP requests
 
-bhyve VNC and vminfod is pretty inconsistent and unstable, so create a VNC socket manually
-`socat -d -d TCP4-LISTEN:15902,fork UNIX-CONNECT:/zones/$(vmadm lookup -1 alias=ops-dev-base03)/root/tmp/vm.vnc`
+    ```Batchfile
+    netsh interface ip set address "Ethernet" static 10.70.1.221 255.255.255.0 10.70.1.1 1
+    netsh interface ip set dns "Ethernet" static 10.70.7.2
+    ```
 
-Initial networking won't be functional, so login via VNC and manually set networking
+22. Allow Remote desktop connection
+23. Abort the `socat` command and switch from VNC to RDP
+24. Rename hostname to match `TEMPLATE_VM_ALIAS` value
+25. Enable console redirection, this allows `vmadm console $VM_ID` to be used
 
-```Batchfile
-netsh interface ip set address "Ethernet" static 10.70.1.221 255.255.255.0 10.70.1.1 1
-netsh interface ipv4 add dnsserver "Ethernet" address=10.70.7.2 index=1
-```
+    ```Batchfile
+    bcdedit /ems on
+    bcdedit /emssettings emsport:1 emsbaudrate:115200
+    ```
 
-Also disable the Windows Firewall, and enable Remote desktop connections. You can now switch to RDP.
-
-Configure EMS
-
-```Batchfile
-bcdedit /ems on
-bcdedit /emssettings emsport:1 emsbaudrate:115200
-```
-
-Configure prototype VM as desired, then proceed to [Updating the image](#updating-the-image), *Step 10* through *Step 15*
+26. Copy [smartdc](./smartdc) to VM's `C:\smartdc`
+27. Copy [SetupComplete.cmd](./smartdc/lib/SetupComplete.cmd) to `C:\Windows\Setup\Scripts\SetupComplete.cmd`
+28. Set hardware time to UTC, `reg ADD HKLM\System\CurrentControlSet\Control\TimeZoneInformation /t REG_DWORD /v RealTimeIsUniversal /d 1`
+29. Perform neccessary image customization
+    * e.g. patching, sysprep unattend.xml changes
+30. Continue with [updating bhyve image](#updating-bhyve-image)
 
 ## Updating bhyve image
 
