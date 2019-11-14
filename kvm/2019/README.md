@@ -7,7 +7,7 @@
 
 ## Creating a fresh KVM image
 
-Joyent sdc-vmtools-windows documentation for Windows Server 2012R2 and 2016 involve hard-coding configuration values, which has longevity limitations. As such, this process relies on operator judgement, allows infrastructure agnostic configuration, and decouples image creation from winsetup ISO publishes.
+Windows Server 2012R2 and 2016 involved hard-coding configuration values, this process relies on operator judgement, allows infrastructure agnostic configuration, and decouples image creation from winsetup ISO publishes.
 
 To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
@@ -53,7 +53,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     }' > /var/tmp/images/windows_server_2019_kvm.json
     ```
 
-7. Create template VM `vmadm create -f /var/tmp/images/windows_server_2019_kvm.json`
+7. Create template VM, `vmadm create -f /var/tmp/images/windows_server_2019_kvm.json`
 8. Set helper variables
 
     ````bash
@@ -67,16 +67,17 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     * TightVNC client is known to work
     * Choose **Custom** installation
     * Load VirtIO **NetKVM** then **viostor** drivers from the VirtIO ISO during setup
-12. Manually enable RDP
+12. Allow Remote desktop connections
 13. Rename hostname to match `TEMPLATE_VM_ALIAS` value
 14. Shutdown VM from inside VNC session
 15. Start VM normally, `vmadm start $VM_ID`
-16. Copy [smartdc](./smartdc) to VM's `C:\smartdc`
-17. Copy [SetupComplete.cmd](./smartdc/lib/SetupComplete.cmd) to `C:\Windows\Setup\Scripts\SetupComplete.cmd`
-18. Set hardware time to UTC, `reg ADD HKLM\System\CurrentControlSet\Control\TimeZoneInformation /t REG_DWORD /v RealTimeIsUniversal /d 1`
-19. Perform neccessary image customization
+16. Connect via RDP instead of VNC
+17. Copy [smartdc](./smartdc) to VM's `C:\smartdc`
+18. Copy [SetupComplete.cmd](./smartdc/lib/SetupComplete.cmd) to `C:\Windows\Setup\Scripts\SetupComplete.cmd`
+19. Set hardware time to UTC, `reg ADD HKLM\System\CurrentControlSet\Control\TimeZoneInformation /t REG_DWORD /v RealTimeIsUniversal /d 1`
+20. Perform neccessary image customization
     * e.g. patching, sysprep unattend.xml changes
-20. Continue with [updating kvm image](#updating-kvm-image)
+21. Continue with [updating kvm image](#updating-kvm-image)
 
 ## Updating kvm image
 
