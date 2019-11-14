@@ -1,6 +1,8 @@
 # Windows KVM image creation
 
-For Windows Server 2019 KVM, see [README](./2019/README.md).
+[Windows Server 2019 KVM has a dedicated readme](./2019/README.md).
+
+For Windows Server 2012R2 or 2016, continue reading this README.
 
 ## Create your Windows VM and install Windows
 

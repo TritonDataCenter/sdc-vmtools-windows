@@ -1,5 +1,9 @@
 # Windows bhyve image creation
 
+[Windows Server 2019 bhyve has a dedicated readme](./2019/README.md).
+
+For Windows Server 2012R2 or 2016, continue reading this README.
+
 ISO files repo for setting up Windows unattended on bhyve / SmartOS
 
 For [Windows Server eval ISOs](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2019) remove the `<ProductKey>` XML tag from `Autounattend.xml` ([lines 50-53](https://github.com/joyent/sdc-vmtools-windows/blob/9d1d075171a6c93244cd8487ad94aa431b7f761e/bhyve/Autounattend.xml#L50-L53)) to make unattended Windows Server setup work (License Terms not found error), then create a fresh `winsetup.iso`. See below.
