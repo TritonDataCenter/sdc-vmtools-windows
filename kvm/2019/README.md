@@ -15,7 +15,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 2. Launch a new `screen` session
     * keep this session open until image creation is completed
 3. Create working directory for images, `mkdir -p /var/tmp/images`
-4. Copy Windows ISO to headnode, `scp ~/Downloads/SW_DVD9_Win_Server_STD_CORE_2019_64Bit_English_DC_STD_MLF_X21-96581.iso root@10.70.1.2:/var/tmp/images/win2019.iso`
+4. Copy Windows ISO to headnode, `scp ~/Downloads/SW_DVD9_Win_Server_STD_CORE_2019_64Bit_English_DC_STD_MLF_X21-96581.iso root@8.11.11.2:/var/tmp/images/win2019.iso`
 5. Download VirtIO drivers, `wget --no-check-certificate -O /var/tmp/images/virtio-win.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso`
     * As of this writing, `171` is the most recent stable
 6. Build template VM json, ensure values match your environment
@@ -80,7 +80,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
 ## Updating kvm image
 
-1. SSH to headnode, `ssh root@10.70.1.2`
+1. SSH to headnode, `ssh root@8.11.11.2`
 2. Launch a new `screen` session
     * keep this session open until process is completed
 3. Set helper variables
