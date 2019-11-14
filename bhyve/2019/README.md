@@ -11,20 +11,20 @@ Windows Server 2012R2 and 2016 involved hard-coding configuration values, this p
 
 To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
-1. SSH to headnode, `ssh root@10.70.1.2`
+1. SSH to headnode, `ssh root@8.11.11.2`
 2. Launch a new `screen` session
     * keep this session open until image creation is completed
 3. Create working directory for images, `mkdir -p /var/tmp/images`
 4. Set helper variables
 
     ```bash
-    TEMPLATE_VM_ALIAS='ops-dev-base05' && \
+    TEMPLATE_VM_ALIAS='win2019_bhyve' && \
     WINDOWS_INSTALL_CD=/zones/win2019.iso && \
     VIRTIO_DRIVER_CD=/zones/virtio-win.iso && \
     INSTALL_ZVOL=windows_bhyve_2019
     ```
 
-5. Copy Windows ISO to headnode, `scp ~/Downloads/SW_DVD9_Win_Server_STD_CORE_2019_64Bit_English_DC_STD_MLF_X21-96581.iso root@10.70.1.2:/var/tmp/images/win2019.iso`
+5. Copy Windows ISO to headnode, `scp ~/Downloads/SW_DVD9_Win_Server_STD_CORE_2019_64Bit_English_DC_STD_MLF_X21-96581.iso root@8.11.11.2:/var/tmp/images/win2019.iso`
 6. Move Windows install ISO to a bhyve-accessible location, `mv /var/tmp/images/win2019.iso $WINDOWS_INSTALL_CD`
 7. Download VirtIO drivers, `wget --no-check-certificate -O $VIRTIO_DRIVER_CD https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso`
     * As of this writing, `171` is the most recent stable
@@ -38,13 +38,13 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
         -s 2,ahci-cd,$WINDOWS_INSTALL_CD \
         -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
         -s 4,ahci-cd,$VIRTIO_DRIVER_CD \
-        -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768,wait \
+        -s 28,fbuf,vga=off,tcp=0.0.0.0:15900,w=1024,h=768,wait \
         -s 29,xhci,tablet \
         -s 31,lpc \
         $INSTALL_ZVOL
     ```
 
-10. Connect via TightVNC to port `15902`, hit any key to boot Windows installation media
+10. Connect via TightVNC to port `15900`, hit any key to boot Windows installation media
     * POST will wait for VNC connection
 11. Go through the Windows installation process
     * TightVNC client is known to work
@@ -58,7 +58,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
         -l com1,stdio \
         -l bootrom,/usr/share/bhyve/uefi-rom.bin \
         -s 3,virtio-blk,/dev/zvol/rdsk/zones/$INSTALL_ZVOL \
-        -s 28,fbuf,vga=off,tcp=0.0.0.0:15902,w=1024,h=768 \
+        -s 28,fbuf,vga=off,tcp=0.0.0.0:15900,w=1024,h=768 \
         -s 29,xhci,tablet \
         -s 31,lpc \
         $INSTALL_ZVOL
@@ -74,7 +74,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
     ```bash
     echo '{
-      "alias": "ops-dev-base05",
+      "alias": "win2019_bhyve",
       "brand": "bhyve",
       "vcpus": 2,
       "autoboot": false,
@@ -90,17 +90,16 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
       "nics": [
         {
           "nic_tag": "external",
-          "vlan_id": 201,
-          "ip": "10.70.1.223",
+          "vlan_id": 111,
+          "ip": "8.11.11.48",
           "netmask": "255.255.255.0",
-          "gateway": "10.70.1.1",
+          "gateway": "8.11.11.1",
           "primary": "true",
           "model": "virtio"
         }
       ],
       "resolvers": [
-        "10.70.7.2",
-        "10.70.7.3"
+        "8.8.8.8"
       ]
     }
     ' > /var/tmp/images/${INSTALL_ZVOL}_manifest.json
@@ -117,15 +116,15 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     vmadm start $VM_ID
     ```
 
-19. Create VNC socket manually, `socat -d -d TCP4-LISTEN:15902,fork UNIX-CONNECT:/zones/${VM_ID}/root/tmp/vm.vnc`
+19. Create VNC socket manually, `socat -d -d TCP4-LISTEN:15900,fork UNIX-CONNECT:/zones/${VM_ID}/root/tmp/vm.vnc`
     * [bhyve VNC and vminfod can be inconsistent](https://smartos.org/bugview/OS-7953)
 20. Connect via TightVNC and sign-in to VM
 21. Manually configure initial networking, ensure values match your environment
     * Unlike KVM, bhyve does not listen to local traffic for DHCP requests
 
     ```Batchfile
-    netsh interface ip set address "Ethernet" static 10.70.1.221 255.255.255.0 10.70.1.1 1
-    netsh interface ip set dns "Ethernet" static 10.70.7.2
+    netsh interface ip set address "Ethernet" static 8.11.11.48 255.255.255.0 8.11.11.1 1
+    netsh interface ip set dns "Ethernet" static 8.8.8.8
     ```
 
 22. Allow Remote desktop connection
@@ -147,13 +146,13 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
 ## Updating bhyve image
 
-1. SSH to headnode, `root@10.70.1.2`
+1. SSH to headnode, `root@8.11.11.2`
 2. Launch a new `screen` session
     * keep this session open until image creation is completed
 3. Set helper variables
 
     ```bash
-    TEMPLATE_VM_ALIAS='ops-dev-base03' && \
+    TEMPLATE_VM_ALIAS='win2019_bhyve' && \
     PATCH_VERSION=0 && \
     OS_VERSION=2019 && \
     HYPERVISOR=bhyve && \

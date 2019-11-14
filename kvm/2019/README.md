@@ -11,7 +11,7 @@ Windows Server 2012R2 and 2016 involved hard-coding configuration values, this p
 
 To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
-1. SSH to headnode, `ssh root@10.70.1.2`
+1. SSH to headnode, `ssh root@8.11.11.2`
 2. Launch a new `screen` session
     * keep this session open until image creation is completed
 3. Create working directory for images, `mkdir -p /var/tmp/images`
@@ -22,7 +22,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 
     ```bash
     echo '{
-      "alias": "ops-dev-base04",
+      "alias": "win2019_kvm",
       "brand": "kvm",
       "vcpus": 4,
       "qemu_extra_opts": "-cpu host",
@@ -39,16 +39,15 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
         {
           "nic_tag": "external",
           "vlan_id": 201,
-          "ip": "10.70.1.222",
+          "ip": "8.12.12.49",
           "netmask": "255.255.255.0",
-          "gateway": "10.70.1.1",
+          "gateway": "8.12.12.1",
           "primary": "true",
           "model": "virtio"
         }
       ],
       "resolvers": [
-        "10.70.7.2",
-        "10.70.7.3"
+        "8.8.8.8"
       ]
     }' > /var/tmp/images/windows_server_2019_kvm.json
     ```
@@ -57,7 +56,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 8. Set helper variables
 
     ````bash
-    TEMPLATE_VM_ALIAS='ops-dev-base04' && \
+    TEMPLATE_VM_ALIAS='win2019_kvm' && \
     VM_ID=$(vmadm lookup -1 alias=${TEMPLATE_VM_ALIAS})
     ```
 
@@ -87,7 +86,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 3. Set helper variables
 
     ```bash
-    TEMPLATE_VM_ALIAS='ops-dev-base04' && \
+    TEMPLATE_VM_ALIAS='win2019_kvm' && \
     PATCH_VERSION=0 && \
     OS_VERSION=2019 && \
     HYPERVISOR=kvm && \
