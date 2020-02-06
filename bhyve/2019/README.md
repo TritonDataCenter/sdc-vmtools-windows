@@ -67,9 +67,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
 13. Re-run the above command, re-connect via VNC, finalize setup, then shutdown
     * Set administrator password
 14. Save a zvol for ease of use, `zfs send zones/$INSTALL_ZVOL > /var/tmp/images/${INSTALL_ZVOL}_base.zvol`
-15. Clean up initial installation files
-    1. `rm $WINDOWS_INSTALL_CD $VIRTIO_DRIVER_CD`
-    2. `zfs destroy zones/$INSTALL_ZVOL`
+15. Clean up initial installation, `rm $WINDOWS_INSTALL_CD $VIRTIO_DRIVER_CD`
 16. Build template VM json, ensure values match your environment
 
     ```bash
@@ -113,6 +111,7 @@ To simplify SDC/Triton image tooling, the headnode will be used for the VM.
     VM_ID=$(vmadm lookup -1 alias=${TEMPLATE_VM_ALIAS})
     zfs destroy zones/${VM_ID}/disk0 && \
     zfs send zones/$INSTALL_ZVOL | zfs recv zones/${VM_ID}/disk0 && \
+    zfs destroy zones/$INSTALL_ZVOL && \
     vmadm start $VM_ID
     ```
 
