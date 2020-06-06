@@ -57,6 +57,12 @@ If you want VNC access, add the following line before `windows`
 ```
     -s 28,fbuf,vga=off,tcp=0.0.0.0:5900,w=1024,h=768,wait -s 29,xhci,tablet \
 ```
+Including the `wait` option will prevent the instance from booting until a VNC
+connection is established.
+
+NOTE: You need to be prepared to quickly press a key when prompted on the
+terminal where the `bhyve` command is run (i.e. `stdin`) once the instance
+starts in order for the Windows ISO to boot.
 
 Now wait until bhyve terminates, which will take some time.
 
