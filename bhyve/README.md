@@ -53,9 +53,10 @@ pfexec /usr/sbin/bhyve -c 2 -m 3G -H \
     windows
 ```
 
-If you want VNC access, add the following line before `windows`
+If you want VNC access, add the following lines before `windows`
 ```
-    -s 28,fbuf,vga=off,tcp=0.0.0.0:5900,w=1024,h=768,wait -s 29,xhci,tablet \
+    -s 28,fbuf,vga=off,tcp=0.0.0.0:5900,w=1024,h=768,wait \
+    -s 29,xhci,tablet \
 ```
 Including the `wait` option will prevent the instance from booting until a VNC
 connection is established.
